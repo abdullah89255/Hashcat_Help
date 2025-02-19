@@ -192,5 +192,199 @@ hashcat -m 0 -a 1 hash.txt wordlist1.txt wordlist2.txt
    - Hybrid for mixed approaches.
 
 ---
+---
+Here are more advanced Hashcat examples for specialized and complex password-cracking tasks:
 
-Hashcat is a highly versatile tool, and mastering it requires experimenting with various options. Let me know if you need help with a specific use case!
+---
+
+### **1. Combinator Attack (Mode `-a 1`)**
+The combinator attack combines two dictionaries to form candidate passwords.
+
+#### Example:
+Combine `wordlist1.txt` and `wordlist2.txt` to crack MD5 hashes:
+```bash
+hashcat -m 0 -a 1 hash.txt wordlist1.txt wordlist2.txt
+```
+This will try combinations like:
+```
+password123 + hello = password123hello
+hello + password123 = hellopassword123
+```
+
+---
+
+### **2. Hybrid Attack (Mode `-a 6` and `-a 7`)**
+#### **a. Dictionary + Mask (`-a 6`):**
+Attach a mask to every word in the dictionary.
+
+##### Example:
+Use `rockyou.txt` and append two digits (`?d?d`) to each word to crack an NTLM hash:
+```bash
+hashcat -m 1000 -a 6 hash.txt rockyou.txt ?d?d
+```
+Tries passwords like:
+```
+password01
+hello99
+```
+
+#### **b. Mask + Dictionary (`-a 7`):**
+Prepend a mask to every word in the dictionary.
+
+##### Example:
+Prepend three lowercase letters (`?l?l?l`) to words in `rockyou.txt`:
+```bash
+hashcat -m 1000 -a 7 hash.txt ?l?l?l rockyou.txt
+```
+Tries passwords like:
+```
+abcpassword
+xyzhello
+```
+
+---
+
+### **3. Rule-Based Attack (Advanced)**
+Rules are powerful for transforming words in a dictionary dynamically.
+
+#### Example 1: Appending Numbers
+Use the `best64.rule` to transform `rockyou.txt`:
+```bash
+hashcat -m 0 -a 0 -r /usr/share/hashcat/rules/best64.rule hash.txt rockyou.txt
+```
+Tries transformations like:
+```
+password -> password123
+hello    -> hello!
+```
+
+#### Example 2: Custom Rule
+Create a rule file (`custom.rule`) with transformations:
+```
+:            # No change
+$1           # Append "1"
+$2           # Append "2"
+^pass        # Prepend "pass"
+```
+
+Run with the custom rule:
+```bash
+hashcat -m 0 -a 0 -r custom.rule hash.txt rockyou.txt
+```
+Tries passwords like:
+```
+password1
+password2
+passpassword
+```
+
+---
+
+### **4. Distributed Cracking**
+Distribute the workload across multiple devices or machines.
+
+#### Example: Splitting the Keyspace
+Split the keyspace manually for distributed cracking:
+Machine 1:
+```bash
+hashcat -m 0 -a 3 -s 0 -l 500000 hash.txt ?a?a?a?a
+```
+Machine 2:
+```bash
+hashcat -m 0 -a 3 -s 500001 -l 1000000 hash.txt ?a?a?a?a
+```
+
+---
+
+### **5. Advanced Mask Attacks**
+#### Example 1: Custom Character Sets
+Define custom character sets for efficient brute-forcing:
+```bash
+hashcat -m 0 -a 3 -1 ?l?u ?1?1?1?1?1?1
+```
+This tries all combinations of 6 characters using uppercase and lowercase letters.
+
+#### Example 2: Pin Code Cracking
+Crack a 6-digit numeric PIN:
+```bash
+hashcat -m 0 -a 3 hash.txt ?d?d?d?d?d?d
+```
+
+---
+
+### **6. Cracking Password Lists (Multiple Hashes)**
+#### Example:
+Crack multiple hashes stored in `hashlist.txt` using `rockyou.txt`:
+```bash
+hashcat -m 0 -a 0 hashlist.txt rockyou.txt --username
+```
+The `--username` flag skips usernames and focuses only on the hashes.
+
+---
+
+### **7. Hashcat Tuning**
+#### Example 1: Increase Performance
+Optimize cracking with kernel tuning (`-O`) and workload profiles:
+```bash
+hashcat -m 0 -a 0 -O --optimized-kernel-enable --workload-profile 3 hash.txt wordlist.txt
+```
+
+#### Example 2: Limit GPU Usage
+Limit GPU workload to avoid overheating:
+```bash
+hashcat -m 0 -a 0 --gpu-temp-abort=85 hash.txt wordlist.txt
+```
+
+---
+
+### **8. Cracking Salty Hashes**
+For salted hashes, specify the salt using `--separator` or append salts manually in the input file.
+
+#### Example:
+Crack salted SHA1 hashes (`salt:hash` format in `hashlist.txt`):
+```bash
+hashcat -m 110 --separator : hashlist.txt rockyou.txt
+```
+
+---
+
+### **9. Incremental Mask Attack**
+Start with smaller lengths and increment up:
+```bash
+hashcat -m 0 -a 3 hash.txt ?a?a?a?a --increment --increment-min=3 --increment-max=6
+```
+Tries lengths 3 to 6 with all characters.
+
+---
+
+### **10. Debugging and Advanced Output**
+#### Example 1: Show Only Cracked Passwords
+```bash
+hashcat -m 0 -a 0 --show hash.txt
+```
+
+#### Example 2: Output Debug Information
+Enable debugging to analyze failed attempts:
+```bash
+hashcat -m 0 -a 0 --debug-mode=1 --debug-file=debug.txt hash.txt wordlist.txt
+```
+
+---
+
+### **11. Combined Hash Modes**
+If the hash type is unknown, use `--hash-mode` with multiple modes:
+```bash
+hashcat -a 0 -m 0,1000 hash.txt wordlist.txt
+```
+
+---
+
+### **12. Restore Sessions**
+Resume cracking from a saved session:
+```bash
+hashcat --restore --session mysession
+```
+
+---
+
+Hashcat is incredibly flexible, and its advanced usage often involves customizing the approach based on your specific target. Let me know if you'd like to dive deeper into any of these examples!
